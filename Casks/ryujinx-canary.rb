@@ -4,26 +4,23 @@ cask "ryujinx-canary" do
 
   url "https://git.ryujinx.app/Ryubing/Canary/releases/download/#{version}/ryujinx-canary-#{version}-macos_universal.app.tar.gz",
       verified: "git.ryujinx.app/Ryubing/Canary/"
-
   name "Ryujinx Canary"
   desc "Open-source Nintendo Switch emulator (Canary build)"
-  homepage "https://git.ryujinx.app/projects/Ryubing"
+  homepage "https://ryujinx.org/"
 
   livecheck do
     url "https://git.ryujinx.app/api/v1/repos/Ryubing/Canary/releases"
-
     strategy :json do |json|
       latest = json.first
       next if latest.nil?
-
       tag = latest["tag_name"]
       next if tag.nil?
-
       tag.sub(/^v/, "")
     end
   end
 
-  app "Ryujinx.app"
+  depends_on :macos
 
+  app "Ryujinx.app"
   conflicts_with cask: "ryujinx"
 end
