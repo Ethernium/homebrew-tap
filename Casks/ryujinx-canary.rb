@@ -13,14 +13,16 @@ cask "ryujinx-canary" do
     strategy :json do |json|
       latest = json.first
       next if latest.nil?
+
       tag = latest["tag_name"]
       next if tag.nil?
+
       tag.sub(/^v/, "")
     end
   end
 
+  conflicts_with cask: "ryujinx"
   depends_on :macos
 
   app "Ryujinx.app"
-  conflicts_with cask: "ryujinx"
 end
