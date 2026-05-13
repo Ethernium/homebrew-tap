@@ -7,7 +7,7 @@ cask "ryujinx" do
 
   name "Ryujinx"
   desc "Open-source Nintendo Switch emulator"
-  homepage "https://ryujinx.org/"
+  homepage "https://git.ryujinx.app/projects/Ryubing"
 
   livecheck do
     # Point to the Forgejo API endpoint for releases

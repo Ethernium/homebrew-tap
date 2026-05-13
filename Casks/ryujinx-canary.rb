@@ -7,7 +7,7 @@ cask "ryujinx-canary" do
 
   name "Ryujinx Canary"
   desc "Open-source Nintendo Switch emulator (Canary build)"
-  homepage "https://ryujinx.org/"
+  homepage "https://git.ryujinx.app/projects/Ryubing"
 
   livecheck do
     url "https://git.ryujinx.app/api/v1/repos/Ryubing/Canary/releases"
