@@ -2,7 +2,6 @@ name: brew livecheck
 
 on:
   schedule:
-    # Run every day at 08:00 UTC
     - cron: "0 8 * * *"
   workflow_dispatch:
 
@@ -26,7 +25,6 @@ jobs:
       - name: Discover casks and formulae
         id: discover
         run: |
-          # List all .rb files in Casks/ and Formula/ directories
           CASK_NAMES=""
           if [ -d "Casks" ]; then
             for file in Casks/*.rb; do
@@ -49,7 +47,6 @@ jobs:
       - name: Run brew livecheck
         id: livecheck
         run: |
-          # Build args dynamically from discovered casks and formulae
           ARGS=""
           if [ -n "${{ steps.discover.outputs.casks }}" ]; then
             ARGS="--cask ${{ steps.discover.outputs.casks }}"
@@ -58,15 +55,17 @@ jobs:
             ARGS="$ARGS --formula ${{ steps.discover.outputs.formulae }}"
           fi
 
-          # Skip if nothing to check
           if [ -z "$ARGS" ]; then
             echo "No casks or formulae to check!"
-            echo "outdated=false" >> "$GITHUB_OUTPUT"
-            echo "output<<" >> "$GITHUB_OUTPUT"
-            echo "EOF" >> "$GITHUB_OUTPUT"
+            {
+              echo "outdated=false"
+              echo "output<<EOF"
+              echo "EOF"
+            } >> "$GITHUB_OUTPUT"
             exit 0
           fi
 
+          # shellcheck disable=SC2086
           OUTPUT=$(brew livecheck --newer-only --quiet $ARGS 2>/dev/null || true)
           {
             echo "output<<EOF"
@@ -103,14 +102,14 @@ jobs:
         run: |
           if [ "${{ steps.livecheck.outputs.outdated }}" == "true" ]; then
             {
-              echo "### 🍺 Homebrew Livecheck Report"
+              echo "### Homebrew Livecheck Report"
               echo ""
-              echo "Outdated casks found and bumped:"
+              echo "Outdated casks/formulae found and bumped:"
               echo ""
               echo '```'
               echo "${{ steps.livecheck.outputs.output }}"
               echo '```'
             } >> "$GITHUB_STEP_SUMMARY"
           else
-            echo "### ✅ All casks are up to date" >> "$GITHUB_STEP_SUMMARY"
+            echo "### All casks/formulae are up to date" >> "$GITHUB_STEP_SUMMARY"
           fi
