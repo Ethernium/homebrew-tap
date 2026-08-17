@@ -1,0 +1,74 @@
+name: brew livecheck
+
+on:
+  schedule:
+    # Run every day at 08:00 UTC
+    - cron: 0 8 * * *
+  workflow_dispatch:
+
+jobs:
+  livecheck:
+    runs-on: macos-15
+    permissions:
+      contents: write
+      pull-requests: write
+
+    steps:
+      - name: Set up Homebrew
+        id: set-up-homebrew
+        uses: Homebrew/actions/setup-homebrew@main
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Configure Git
+        uses: Homebrew/actions/git-user-config@main
+
+      - name: Run brew livecheck
+        id: livecheck
+        run: |
+          # Run livecheck on all casks, capture output
+          OUTPUT=$(brew livecheck --cask --newer-only --quiet 2>&1 || true)
+          echo "output<<EOF" >> $GITHUB_OUTPUT
+          echo "$OUTPUT" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+          # Check if anything is outdated
+          if [ -z "$OUTPUT" ]; then
+            echo "outdated=false" >> $GITHUB_OUTPUT
+            echo "All casks are up to date!"
+          else
+            echo "outdated=true" >> $GITHUB_OUTPUT
+            echo "Outdated casks found:"
+            echo "$OUTPUT"
+          fi
+
+      - name: Bump outdated casks
+        if: steps.livecheck.outputs.outdated == 'true'
+        env:
+          HOMEBREW_GITHUB_API_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # Parse livecheck output and bump each outdated cask
+          echo "${{ steps.livecheck.outputs.output }}" | while IFS=: read -r cask result; do
+            # Extract cask name (trim whitespace)
+            cask_name=$(echo "$cask" | xargs)
+
+            if [ -n "$cask_name" ]; then
+              echo "Bumping $cask_name..."
+              brew bump-cask-pr --no-browse --no-audit "$cask_name" || \
+                echo "Failed to bump $cask_name — may need manual intervention"
+            fi
+          done
+
+      - name: Summary
+        run: |
+          if [ "${{ steps.livecheck.outputs.outdated }}" == "true" ]; then
+            echo "### 🍺 Homebrew Livecheck Report" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "Outdated casks found and bumped:" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+            echo "${{ steps.livecheck.outputs.output }}" >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+          else
+            echo "### ✅ All casks are up to date" >> $GITHUB_STEP_SUMMARY
+          fi
