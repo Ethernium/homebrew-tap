@@ -15,7 +15,5 @@ cask "cemu" do
 
   depends_on macos: :monterey
 
-
-
   app "Cemu.app"
 end
