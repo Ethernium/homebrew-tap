@@ -6,7 +6,7 @@ cask "ryujinx" do
       verified: "git.ryujinx.app/projects/Ryubing/"
   name "Ryujinx"
   desc "Open-source Nintendo Switch emulator"
-  homepage "https://ryujinx.org/"
+  homepage "https://git.ryujinx.app/projects/Ryubing"
 
   livecheck do
     url "https://git.ryujinx.app/api/v1/repos/Ryubing/Ryujinx/releases"
@@ -22,7 +22,8 @@ cask "ryujinx" do
   end
 
   conflicts_with cask: "ryujinx-canary"
-  depends_on :macos
+
+  depends_on macos: :monterey
 
   app "Ryujinx.app"
 end
