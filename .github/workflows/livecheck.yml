@@ -26,7 +26,7 @@ jobs:
       - name: Run brew livecheck
         id: livecheck
         run: |
-          OUTPUT=$(brew livecheck --cask --newer-only --quiet 2>/dev/null || true)
+          OUTPUT=$(brew livecheck --cask --formula --newer-only --quiet 2>/dev/null || true)
           {
             echo "output<<EOF"
             echo "$OUTPUT"
@@ -35,10 +35,10 @@ jobs:
 
           if [ -z "$OUTPUT" ]; then
             echo "outdated=false" >> "$GITHUB_OUTPUT"
-            echo "All casks are up to date!"
+            echo "All casks/formulae are up to date!"
           else
             echo "outdated=true" >> "$GITHUB_OUTPUT"
-            echo "Outdated casks found:"
+            echo "Outdated items found:"
             echo "$OUTPUT"
           fi
 
