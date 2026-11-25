@@ -15,4 +15,15 @@ cask "cemu" do
   depends_on macos: :monterey
 
   app "Cemu.app"
+
+  zap trash: [
+    "~/Library/Application Support/Cemu",
+    "~/Library/Caches/Cemu",
+    "~/Library/Preferences/info.cemu.Cemu.plist",
+    "~/Library/Saved Application State/info.cemu.Cemu.savedState",
+  ]
+
+  caveats do
+    requires_rosetta
+  end
 end

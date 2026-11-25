@@ -22,51 +22,12 @@ jobs:
       - name: Configure Git
         uses: Homebrew/actions/git-user-config@main
 
-      - name: Discover casks and formulae
-        id: discover
-        run: |
-          CASK_NAMES=""
-          if [ -d "Casks" ]; then
-            for file in Casks/*.rb; do
-              [ -f "$file" ] && NAME=$(basename "$file" .rb) && CASK_NAMES="$CASK_NAMES $NAME"
-            done
-          fi
-
-          FORMULA_NAMES=""
-          if [ -d "Formula" ]; then
-            for file in Formula/*.rb; do
-              [ -f "$file" ] && NAME=$(basename "$file" .rb) && FORMULA_NAMES="$FORMULA_NAMES $NAME"
-            done
-          fi
-
-          echo "casks=$CASK_NAMES" >> "$GITHUB_OUTPUT"
-          echo "formulae=$FORMULA_NAMES" >> "$GITHUB_OUTPUT"
-          echo "Casks found:$CASK_NAMES"
-          echo "Formulae found:$FORMULA_NAMES"
-
       - name: Run brew livecheck
         id: livecheck
+        env:
+          HOMEBREW_GITHUB_API_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
         run: |
-          ARGS=""
-          if [ -n "${{ steps.discover.outputs.casks }}" ]; then
-            ARGS="--cask ${{ steps.discover.outputs.casks }}"
-          fi
-          if [ -n "${{ steps.discover.outputs.formulae }}" ]; then
-            ARGS="$ARGS --formula ${{ steps.discover.outputs.formulae }}"
-          fi
-
-          if [ -z "$ARGS" ]; then
-            echo "No casks or formulae to check!"
-            {
-              echo "outdated=false"
-              echo "output<<EOF"
-              echo "EOF"
-            } >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
-
-          # shellcheck disable=SC2086
-          OUTPUT=$(brew livecheck --newer-only --quiet $ARGS 2>/dev/null || true)
+          OUTPUT=$(brew livecheck --tap="$GITHUB_REPOSITORY" --newer-only --quiet || true)
           {
             echo "output<<EOF"
             echo "$OUTPUT"
@@ -82,19 +43,25 @@ jobs:
             echo "$OUTPUT"
           fi
 
-      - name: Bump outdated casks
+      - name: Bump outdated casks and formulae
         if: steps.livecheck.outputs.outdated == 'true'
         env:
           HOMEBREW_GITHUB_API_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
         run: |
           echo "${{ steps.livecheck.outputs.output }}" | while IFS= read -r line; do
-            cask_name=$(echo "$line" | cut -d: -f1 | xargs)
+            item_name=$(echo "$line" | cut -d: -f1 | xargs)
             new_version=$(echo "$line" | grep -o '==> .*' | awk '{print $2}')
 
-            if [ -n "$cask_name" ] && [ -n "$new_version" ]; then
-              echo "Bumping $cask_name to $new_version..."
-              brew bump-cask-pr --version "$new_version" --no-browse --no-audit "$cask_name" || \
-                echo "Failed to bump $cask_name — may need manual intervention"
+            if [ -n "$item_name" ] && [ -n "$new_version" ]; then
+              if [ -f "Casks/${item_name}.rb" ]; then
+                echo "Bumping cask $item_name to $new_version..."
+                brew bump-cask-pr --version "$new_version" --no-browse --no-audit "${GITHUB_REPOSITORY}/${item_name}" || \
+                  echo "Failed to bump cask $item_name — may need manual intervention"
+              elif [ -f "Formula/${item_name}.rb" ]; then
+                echo "Bumping formula $item_name to $new_version..."
+                brew bump-formula-pr --version "$new_version" --no-browse --no-audit "${GITHUB_REPOSITORY}/${item_name}" || \
+                  echo "Failed to bump formula $item_name — may need manual intervention"
+              fi
             fi
           done
 

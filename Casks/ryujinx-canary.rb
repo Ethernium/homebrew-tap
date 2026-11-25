@@ -1,6 +1,6 @@
 cask "ryujinx-canary" do
-  version "1.3.341"
-  sha256 "e84d5518b207c93a15a2fa94fe80c21e2efc236edc6ee9d82d9b8ac93153af39"
+  version "1.3.356"
+  sha256 "d66306176d9838242228127ace7f78ba3f7991b539fed38f33bc22bf60b9a9aa"
 
   url "https://git.ryujinx.app/Ryubing/Canary/releases/download/#{version}/ryujinx-canary-#{version}-macos_universal.app.tar.gz"
   name "Ryujinx Canary"
@@ -10,13 +10,7 @@ cask "ryujinx-canary" do
   livecheck do
     url "https://git.ryujinx.app/api/v1/repos/Ryubing/Canary/releases"
     strategy :json do |json|
-      latest = json.first
-      next if latest.nil?
-
-      tag = latest["tag_name"]
-      next if tag.nil?
-
-      tag.sub(/^v/, "")
+      json.map { |release| release["tag_name"]&.sub(/^v/i, "") }
     end
   end
 
@@ -24,4 +18,11 @@ cask "ryujinx-canary" do
   depends_on macos: :monterey
 
   app "Ryujinx.app"
+
+  zap trash: [
+    "~/Library/Application Support/Ryujinx",
+    "~/Library/Logs/Ryujinx",
+    "~/Library/Preferences/org.ryujinx.Ryujinx.plist",
+    "~/Library/Saved Application State/org.ryujinx.Ryujinx.savedState",
+  ]
 end
